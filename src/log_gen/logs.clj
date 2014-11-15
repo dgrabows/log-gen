@@ -106,6 +106,6 @@
                         (:bytes event)
                         (:ip event)
                         (or (:query event) "-")
-                        (or (:referer event) "-")
-                        (or (:user-agent event) "-")
+                        (if (:referer event) (str "\"" (:referer event) "\"") "-")
+                        (if (:user-agent event) (str "\"" (:user-agent event) "\"") "-")
                         (:time-taken event)))))))
