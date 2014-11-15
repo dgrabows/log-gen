@@ -115,7 +115,7 @@
   (let [ips (vec (gen/reps (/ n 500) private-ipv4))
         ip-count (count ips)
         mean-nth (/ ip-count 2)
-        stddev-nth (int (* ip-count 0.4))
+        stddev-nth (int (* mean-nth 0.05))
         gen-ip #(nth ips (ranged-normal mean-nth stddev-nth 0 (dec ip-count)))]
     #(access-event gen-ip)))
 
