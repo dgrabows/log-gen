@@ -9,7 +9,7 @@ Utility for generating web server access logs with some attempt made to resemble
 ## Usage
 
     $ lein uberjar
-    $ java -jar target/uberjar/log-gen-0.1.0-standalone.jar <number of log entries> <log output file>
+    $ java -jar target/uberjar/log-gen-0.2.0-standalone.jar <number of log entries> <log output file>
 
 ## Example Output
 
