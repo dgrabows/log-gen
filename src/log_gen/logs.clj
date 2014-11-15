@@ -5,11 +5,11 @@
             [clojure.math.numeric-tower :as math]
             [clojure.string :as string]
             [clj-time.core :as time]
-            [clj-time.coerce :as coerce]
+            [clj-time.coerce :as time.coerce]
+            [clj-time.format :as time.format]
             [clojure.java.io :as io]])
 
 (def example
-  ;date time cs-method cs-uri-stem sc-status bytes c-ip cs-uri-query cs(referer) cs(user-agent) time-taken
   {:timestamp  #inst "2014-11-15T13:28:15.000-00:00"
    :method     "GET"
    :uri        "/index.html"
@@ -55,11 +55,11 @@
 (defn date-in-range
   "Generate a random date with uniform distribution in the range low (inclusive) to high (exclusive)."
   [low high]
-  (coerce/from-long (gen/uniform (coerce/to-long low) (coerce/to-long high))))
+  (time.coerce/from-long (gen/uniform (time.coerce/to-long low) (time.coerce/to-long high))))
 
 (defn access-event
   []
-  {:timestamp  (date-in-range #inst "2014-11-14T05:00:00.000-00:00" #inst "2014-11-15T05:00:00.000-00:00")
+  {:timestamp  (date-in-range (time/minus (time/now) (time/days 7)) (time/now))
    :method     (gen/weighted {"GET" 4 "POST" 1})
    :uri        (gen/weighted {"/index.html"          1
                               "/customers"           10
@@ -74,11 +74,10 @@
                               "/css/main.css"        1
                               "/css/customer.css"    1})
    :status     (gen/weighted {200 7500
-                              302 250
                               500 15
                               401 10
                               404 1})
-   :bytes      (ranged-normal 10000 30000 0 1000000)
+   :bytes      (ranged-normal 10000 30000 20 1000000)
    :ip         (private-ipv4)
    :query      nil
    :referer    nil
@@ -89,3 +88,24 @@
                            "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0"
                            "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:31.0) Gecko/20100101 Firefox/31.0")
    :time-taken (/ (log-normal 30000) 1000.0)})
+
+(defn generate-access-log
+  "Generates an access log file containing n reqeuests spread over 7 days. The file is written to path."
+  [n path]
+  (time
+    (with-open [log-file (io/writer path)]
+      (.write log-file "#date\ttime\tmethod\turi\tstatus\tbytes\tip\turi-query\treferer\tuser-agent\ttime-taken\n")
+      (doseq [event (gen/reps n access-event)]
+        (.write log-file
+                (format "%s\t%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s\t%.3f\n"
+                        (time.format/unparse (:year-month-day time.format/formatters) (:timestamp event))
+                        (time.format/unparse (:hour-minute-second time.format/formatters) (:timestamp event))
+                        (:method event)
+                        (:uri event)
+                        (:status event)
+                        (:bytes event)
+                        (:ip event)
+                        (or (:query event) "-")
+                        (or (:referer event) "-")
+                        (or (:user-agent event) "-")
+                        (:time-taken event)))))))
